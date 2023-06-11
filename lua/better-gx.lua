@@ -1,16 +1,18 @@
-function BetterGx()
+local M = {}
+
+M.BetterGx = function()
 	local cmd
 	if vim.env.WSLENV then
 		vim.cmd("lcd /mnt/c")
 		cmd = ":silent !cmd.exe /C start"
-	elseif vim.fn.has("win32") or vim.fn.has("win32unix") then
+	elseif vim.fn.has("win32") ~= 0 then
 		cmd = ":silent !start"
-	elseif vim.fn.executable("xdg-open") then
+	elseif vim.fn.executable("xdg-open") ~= 0 then
 		cmd = ":silent !xdg-open"
-	elseif vim.fn.executable("open") then
+	elseif vim.fn.executable("open") ~= 0 then
 		cmd = ":silent !open"
 	else
-		vim.api.nvim_echo({ { "Can't find proper opener for an URL!", "ErrorMsg" } }, true, {})
+		vim.notify("Can't find proper opener for an URL!", vim.log.levels.ERROR)
 		return
 	end
 
@@ -20,31 +22,38 @@ function BetterGx()
 
 	local URL = ""
 
+	-- Markdown URLS
 	local save_view = vim.fn.winsaveview()
-	if vim.fn.searchpairpos("\\[.*\\]\\(", "", "\\)", "cbW", "", vim.fn.line(".")) > 0 then
+	local pair_start = vim.fn.searchpairpos("\\[.*\\]\\(", "", "\\)", "cbW", "", vim.fn.line("."))
+	if #pair_start > 0 then
 		URL = vim.fn.matchstr(
 			vim.fn.getline("."):sub(vim.fn.col(".") - 1),
-			"\\[.*\\](\\zs" .. rx_embd .. "\\ze(\\s+.*\\)?"
+			"\\[.*\\](\\zs" .. rx_embd .. "\\ze(\\s+.*\\))?"
 		)
 	end
 	vim.fn.winrestview(save_view)
 
+	-- AsciiDoc URLS
 	if URL == "" then
 		save_view = vim.fn.winsaveview()
-		if vim.fn.searchpairpos(rx_bare .. "\\[", "", "\\]", "cbW", "", vim.fn.line(".")) > 0 then
+		pair_start = vim.fn.searchpairpos(rx_bare .. "\\[", "", "\\]", "cbW", "", vim.fn.line("."))
+		if #pair_start > 0 then
 			URL = vim.fn.matchstr(vim.fn.getline("."):sub(vim.fn.col(".") - 1), "\\S{-}\\ze[")
 		end
 		vim.fn.winrestview(save_view)
 	end
 
+	-- HTML URLS
 	if URL == "" then
 		save_view = vim.fn.winsaveview()
-		if vim.fn.searchpairpos("<a%s+href=", "", "\\%(</a>\\|/>\\)\\zs", "cbW", "", vim.fn.line(".")) > 0 then
+		pair_start = vim.fn.searchpairpos("<a%s+href=", "", "\\%(</a>\\|/>\\)\\zs", "cbW", "", vim.fn.line("."))
+		if #pair_start > 0 then
 			URL = vim.fn.matchstr(vim.fn.getline("."):sub(vim.fn.col(".") - 1), "href=[\"']?\\zs\\S{-}\\ze[\"']?/>")
 		end
 		vim.fn.winrestview(save_view)
 	end
 
+	-- Normal URLS
 	if URL == "" then
 		URL = vim.fn.matchstr(vim.fn.expand("<cfile>"), rx_bare)
 	end
@@ -53,6 +62,8 @@ function BetterGx()
 		return
 	end
 
+	vim.notify(cmd .. " " .. vim.fn.escape(URL, "#%!"))
+
 	vim.api.nvim_command(cmd .. " " .. vim.fn.escape(URL, "#%!"))
 
 	if vim.env.WSLENV then
@@ -60,4 +71,4 @@ function BetterGx()
 	end
 end
 
-vim.keymap.set("n", "gx", BetterGx, {})
+return M
