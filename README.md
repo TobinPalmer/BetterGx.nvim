@@ -12,3 +12,6 @@ return {
   },
 }
 ```
+
+### Inspiration
+This plugin was inspired by [vim-better-gx](https://gist.github.com/habamax/0a6c1d2013ea68adcf2a52024468752e) but is implemented in lua.
