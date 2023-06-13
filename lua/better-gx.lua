@@ -62,9 +62,7 @@ M.BetterGx = function()
 		return
 	end
 
-	vim.notify(cmd .. " " .. vim.fn.escape(URL, "#%!"))
-
-	vim.api.nvim_command(cmd .. " " .. vim.fn.escape(URL, "#%!"))
+	vim.cmd(cmd .. " " .. vim.fn.escape(URL, "#%!"))
 
 	if vim.env.WSLENV then
 		vim.cmd("lcd -")
